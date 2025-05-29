@@ -1,6 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
+const cors = require("cors");
 const PORT = 5005;
 
 // STATIC DATA
@@ -16,6 +17,7 @@ const app = express();
 // MIDDLEWARE
 // Research Team - Set up CORS middleware here:
 // ...
+app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(express.static("public"));
@@ -27,7 +29,7 @@ app.use(cookieParser());
 // Devs Team - Start working on the routes here:
 // ...
 app.get("/", (req, res) => {
-  res.json(cohorts);
+  console.log(req);
 });
 
 app.get("/docs", (req, res) => {
