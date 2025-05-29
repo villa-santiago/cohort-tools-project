@@ -2,6 +2,8 @@ const express = require("express");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const mongoose = require("mongoose");
+const Student = require("./models/Student.model");
 const PORT = 5005;
 
 // STATIC DATA
@@ -24,12 +26,18 @@ app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+//MONGOOSE
+mongoose
+  .connect("mongodb://127.0.0.1:27017/cohort-tools-api")
+  .then(x => console.log(`Connected to Database: "${x.connections[0].name}"`))
+  .catch(err => console.error("Error connecting to MongoDB", err));
+
 
 // ROUTES - https://expressjs.com/en/starter/basic-routing.html
 // Devs Team - Start working on the routes here:
 // ...
 app.get("/", (req, res) => {
-  console.log(req);
+  res.send("Welcome to the Cohort Tools API!");
 });
 
 app.get("/docs", (req, res) => {
@@ -41,7 +49,15 @@ app.get("/api/cohorts", (req, res) => {
 });
 
 app.get("/api/students", (req, res) => {
-  res.json(students);
+  Student.find({})
+  .then((students) => {
+    console.log("Retreived students:", students);
+    res.json(students);
+  })
+  .catch((error) => {
+    console.error("Error", error);
+    res.status(500).json({error:"Failed"});
+  });
 });
 
 
