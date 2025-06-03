@@ -85,7 +85,7 @@ app.delete("/api/cohorts/:id", (req, res)=>{
   Cohort.findByIdAndDelete(id).then(()=>{
     res.status(204).json({message: `Cohort ${id} has been deleted`});
   }).catch(error => res.status(500).json(error));
-})
+});
 
 
 
@@ -101,9 +101,42 @@ app.get("/api/students", (req, res) =>{
 
 //Fetch all students of a specific cohort
 app.get("/api/students/cohort/:cohortId", (req, res) =>{
-  const {id} = req.params;
-  Student.findById({cohort: cohortId}).then(foundStudent => {
+  const {cohortId} = req.params;
+  Student.find({cohort: cohortId}).then(foundStudents => {
+    res.status(200).json(foundStudents);
+  }).catch(error => res.status(500).json(error));
+});
+
+//Fetch student by ID
+app.get("/api/students/:studentId", (req, res) => {
+  const {studentId} = req.params;
+  Student.findById(studentId).then(foundStudent =>{
     res.status(200).json(foundStudent);
+  }).catch(error => res.status(500).json(error))
+});
+
+//Create a new student with cohort ID
+app.post("/api/students", (req, res) => {
+  const {firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort} = req.body;
+  Student.create({firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort}).then(newStudent => {
+    res.status(201).json(newStudent);
+  }).catch(error => res.status(500).json(error));
+});
+
+//Edit an existing student
+app.put("/api/students/:studentId", (req, res) => {
+  const {studentId} = req.params;
+  Student.findByIdAndUpdate(studentId, req.body, {new:true}).then(editedStudent => {
+    res.status(200).json(editedStudent);
+  }).catch(error => res.status(500).json(error));
+
+  });
+
+//Delete a student by ID
+app.delete("/api/students/:studentId", (req, res)=>{
+  const {studentId} = req.params;
+  Student.findByIdAndDelete(studentId).then(()=>{
+    res.status(204).json({message: `Student ${studentId} has been deleted`});
   }).catch(error => res.status(500).json(error));
 });
 
