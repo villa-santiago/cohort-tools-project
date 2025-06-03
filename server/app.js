@@ -4,12 +4,13 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const Student = require("./models/Student.model");
+const Cohort = require("./models/Cohort.model");
 const PORT = 5005;
 
 // STATIC DATA
 // Devs Team - Import the provided files with JSON data of students and cohorts here:
-const cohorts = require('./cohorts.json');
-const students = require('./students.json');
+// const cohorts = require('./cohorts.json');
+// const students = require('./students.json');
 
 
 // INITIALIZE EXPRESS APP - https://expressjs.com/en/4x/api.html#express
@@ -44,20 +45,66 @@ app.get("/docs", (req, res) => {
   res.sendFile(__dirname + "/views/docs.html");
 });
 
+
+//COHORT ROUTES
+
+//Fetch all cohorts
 app.get("/api/cohorts", (req, res) => {
-  res.json(cohorts);
+  Cohort.find().then(allCohorts => {
+    res.status(200).json(allCohorts);
+  }).catch(error => res.status(500).json(error));
 });
 
-app.get("/api/students", (req, res) => {
-  Student.find({})
-  .then((students) => {
-    console.log("Retreived students:", students);
-    res.json(students);
-  })
-  .catch((error) => {
-    console.error("Error", error);
-    res.status(500).json({error:"Failed"});
-  });
+//Fetch cohort by ID
+app.get("/api/cohorts/:id", (req, res) => {
+  const {id} = req.params;
+  Cohort.findById(id).then(foundCohort =>{
+    res.status(200).json(foundCohort);
+  }).catch(error => res.status(500).json(error))
+});
+
+//Create a new cohort
+app.post("/api/cohorts", (req, res) =>{
+  const {cohortSlug, cohortName, program, format, campus, startDate, endDate, inProgress, programManager, leadTeacher, totalHours} = req.body;
+  Cohort.create({cohortSlug, cohortName, program, format, campus, startDate, endDate, inProgress, programManager, leadTeacher, totalHours}).then(newCohort => {
+    res.status(201).json(newCohort);
+  }).catch(error => res.status(500).json(error));
+});
+
+//Edit an existing cohort
+app.put("/api/cohorts/:id", (req, res)=>{
+  const {id} = req.params;
+  Cohort.findByIdAndUpdate(id, req.body, {new:true}).then(editedCohort=>{
+    res.status(200).json(editedCohort);
+  }).catch(error => res.status(500).json(error));
+});
+
+//Delete a specific cohort
+app.delete("/api/cohorts/:id", (req, res)=>{
+  const {id} = req.params;
+  Cohort.findByIdAndDelete(id).then(()=>{
+    res.status(204).json({message: `Cohort ${id} has been deleted`});
+  }).catch(error => res.status(500).json(error));
+})
+
+
+
+
+//STUDENT ROUTES
+
+//Fetch all students
+app.get("/api/students", (req, res) =>{
+  Student.find().then(allStudents => {
+    res.status(200).json(allStudents);
+  }).catch(error => res.status(500).json(error));
+});
+
+//Fetch all students of a specific cohort
+app.get("/api/students/cohort/:cohortId", (req, res) =>{
+  const {id} = req.params;
+  Student.findById({cohort: cohortId}).then(foundStudent => {
+    res.status(200).json(foundStudent);
+  }).catch(error => res.status(500).json(error));
 });
 
 
