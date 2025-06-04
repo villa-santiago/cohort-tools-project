@@ -49,26 +49,92 @@ app.get("/docs", (req, res) => {
 //COHORT ROUTES
 
 //Fetch all cohorts
-app.get("/api/cohorts", (req, res) => {
-  Cohort.find().then(allCohorts => {
-    res.status(200).json(allCohorts);
-  }).catch(error => res.status(500).json(error));
+app.get("/api/cohorts", (req, res, next) => {
+  Cohort.find()
+  .then(allCohorts => {
+    res.status(200).json({
+      message: "Cohorts fetched succesfully.",
+      cohorts: allCohorts
+    });
+}).catch ((error) => {
+  next({
+    status: 500,
+    message: "Failed to fetch cohorts from Database"
+  });
+});
 });
 
+
 //Fetch cohort by ID
-app.get("/api/cohorts/:id", (req, res) => {
+app.get("/api/cohorts/:id", (req, res, next) => {
   const {id} = req.params;
-  Cohort.findById(id).then(foundCohort =>{
-    res.status(200).json(foundCohort);
-  }).catch(error => res.status(500).json(error))
+  Cohort.findById(id)
+  .then(foundCohort => {
+    if (!foundCohort) {
+      return next ({
+        status: 404,
+        message: `Cohort ${id} not found`
+      });
+    }
+    res.status(200).json({
+      message: `Cohort ${id} fetched successfully`,
+      cohort: foundCohort
+    });
+  }).catch ((error) => {
+    next ({
+      status: 500,
+      message: `Cohort ${id} does not exist`
+    });
+  });
 });
 
 //Create a new cohort
-app.post("/api/cohorts", (req, res) =>{
-  const {cohortSlug, cohortName, program, format, campus, startDate, endDate, inProgress, programManager, leadTeacher, totalHours} = req.body;
-  Cohort.create({cohortSlug, cohortName, program, format, campus, startDate, endDate, inProgress, programManager, leadTeacher, totalHours}).then(newCohort => {
-    res.status(201).json(newCohort);
-  }).catch(error => res.status(500).json(error));
+app.post("/api/cohorts", (req, res, next) =>{
+  const {
+    cohortSlug,
+    cohortName,
+    program,
+    format,
+    campus,
+    startDate,
+    endDate,
+    inProgress,
+    programManager,
+    leadTeacher,
+    totalHours
+  } = req.body;
+
+if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate || !endDate) {
+  return next ({
+    status: 400,
+    message: "Missing required fields"
+  });
+}
+
+  Cohort.create({
+    cohortSlug,
+    cohortName,
+    program,
+    format,
+    campus,
+    startDate,
+    endDate,
+    inProgress,
+    programManager,
+    leadTeacher,
+    totalHours
+  })
+  .then(newCohort => {
+    res.status(201).json({
+      message: "Cohort created successfully",
+      cohort: newCohort
+    });
+}).catch (error => {
+  next ({
+    status: 500,
+    message: "Failed to create new cohort"
+  });
+});
 });
 
 //Edit an existing cohort
@@ -146,7 +212,7 @@ app.get("/api/students/:studentId", (req,res) => {
 //Create a new student with cohort ID
 app.post("/api/students", (req, res) => {
   const {firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort} = req.body;
-  Student.create({firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort}).then(newStudent => {
+  Student.create({firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort}).then(newStudent => {//what if I use cohort: cohortId here?
     res.status(201).json(newStudent);
   }).catch(error => res.status(500).json(error));
 });
@@ -168,8 +234,11 @@ app.delete("/api/students/:studentId", (req, res)=>{
   }).catch(error => res.status(500).json(error));
 });
 
+const {errorHandler, notFoundHandler} = require('./middleware/error-handling');
+app.use(errorHandler);
+app.use(notFoundHandler);
 
 // START SERVER
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
