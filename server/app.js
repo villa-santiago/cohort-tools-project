@@ -104,7 +104,7 @@ app.post("/api/cohorts", (req, res, next) =>{
     totalHours
   } = req.body;
 
-if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate || !endDate) {
+if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate || !endDate || !programManager || !leadTeacher) {
   return next ({
     status: 400,
     message: "Missing required fields"
@@ -138,19 +138,58 @@ if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate |
 });
 
 //Edit an existing cohort
-app.put("/api/cohorts/:id", (req, res)=>{
+app.put("/api/cohorts/:id", (req, res, next)=>{
   const {id} = req.params;
-  Cohort.findByIdAndUpdate(id, req.body, {new:true}).then(editedCohort=>{
-    res.status(200).json(editedCohort);
-  }).catch(error => res.status(500).json(error));
+  const updateData = req.body;
+
+  if (!updateData || Object.keys(updateData).length === 0) {
+
+     return next ({
+        status: 400,
+        message: "Missing required fields"
+      });
+
+  }
+
+  Cohort.findByIdAndUpdate(id, updateData, {new:true})
+  .then(editedCohort => {
+    if (!editedCohort){
+      return next ({
+        status: 404,
+        message: `Cohort ${id} not found`,
+      });
+    }
+    res.status(200).json({
+      message: `Cohort ${id} updated successfully`,
+      cohort: editedCohort
+    });
+  }).catch((error) => {
+    next ({
+      status: 500,
+      message: `Failed to update Cohort ${id}`
+    });
+  });
 });
 
 //Delete a specific cohort
-app.delete("/api/cohorts/:id", (req, res)=>{
+app.delete("/api/cohorts/:id", (req, res, next)=>{
   const {id} = req.params;
-  Cohort.findByIdAndDelete(id).then(()=>{
-    res.status(204).json({message: `Cohort ${id} has been deleted`});
-  }).catch(error => res.status(500).json(error));
+  Cohort.findByIdAndDelete(id)
+  .then((deletedCohort)=>{
+    if(!deletedCohort){
+      return next ({
+        status: 400,
+        message: `Cohort ${id} not found`
+      });
+    }
+    res.status(200).json({
+      message: `Cohort ${id} has been deleted`});
+  }).catch ((error) => {
+    next ({
+      status: 500,
+      message: `Failed to delete Cohort ${id}`
+    });
+  });
 });
 
 
