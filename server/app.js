@@ -93,27 +93,55 @@ app.delete("/api/cohorts/:id", (req, res)=>{
 //STUDENT ROUTES
 
 //Fetch all students
-app.get("/api/students", (req, res) =>{
-  Student.find().then(allStudents => {
+// app.get("/api/students", (req, res) =>{
+//   Student.find().then(allStudents => {
+//     res.status(200).json(allStudents);
+//   }).catch(error => res.status(500).json(error));
+// });
+
+app.get("/api/students", (req, res) => {
+  Student.find()
+  .populate("cohort")
+  .then((allStudents) => {
     res.status(200).json(allStudents);
   }).catch(error => res.status(500).json(error));
 });
 
 //Fetch all students of a specific cohort
-app.get("/api/students/cohort/:cohortId", (req, res) =>{
+// app.get("/api/students/cohort/:cohortId", (req, res) =>{
+//   const {cohortId} = req.params;
+//   Student.find({cohort: cohortId}).then(foundStudents => {
+//     res.status(200).json(foundStudents);
+//   }).catch(error => res.status(500).json(error));
+// });
+
+app.get("/api/students/cohort/:cohortId", (req, res) => {
   const {cohortId} = req.params;
-  Student.find({cohort: cohortId}).then(foundStudents => {
+  Student.find({cohort: cohortId})
+  .populate("cohort")
+  .then((foundStudents) => {
     res.status(200).json(foundStudents);
+  }).catch(error => res.status(500).json(error));
+})
+
+//Fetch student by ID
+// app.get("/api/students/:studentId", (req, res) => {
+//   const {studentId} = req.params;
+//   Student.findById(studentId).then(foundStudent =>{
+//     res.status(200).json(foundStudent);
+//   }).catch(error => res.status(500).json(error))
+// });
+
+app.get("/api/students/:studentId", (req,res) => {
+  const {studentId} = req.params;
+  Student.findById(studentId)
+  .populate("cohort")
+  .then((foundStudent)=>{
+    res.status(200).json(foundStudent);
   }).catch(error => res.status(500).json(error));
 });
 
-//Fetch student by ID
-app.get("/api/students/:studentId", (req, res) => {
-  const {studentId} = req.params;
-  Student.findById(studentId).then(foundStudent =>{
-    res.status(200).json(foundStudent);
-  }).catch(error => res.status(500).json(error))
-});
+
 
 //Create a new student with cohort ID
 app.post("/api/students", (req, res) => {
