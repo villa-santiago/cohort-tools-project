@@ -3,8 +3,13 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
+
 const Student = require("./models/Student.model");
 const Cohort = require("./models/Cohort.model");
+const {isAuthenticated} = require("./middleware/jwt.middleware");
+
+const authRoutes = require("./routes/auth.routes");
+
 const PORT = 5005;
 
 // STATIC DATA
@@ -44,6 +49,10 @@ app.get("/", (req, res) => {
 app.get("/docs", (req, res) => {
   res.sendFile(__dirname + "/views/docs.html");
 });
+
+//AUTH ROUTES
+
+app.use("/auth", authRoutes);
 
 
 //COHORT ROUTES
