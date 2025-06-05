@@ -52,16 +52,13 @@ app.get("/docs", (req, res) => {
 app.get("/api/cohorts", (req, res, next) => {
   Cohort.find()
   .then(allCohorts => {
-    res.status(200).json({
-      message: "Cohorts fetched succesfully.",
-      cohorts: allCohorts
-    });
-}).catch ((error) => {
-  next({
-    status: 500,
-    message: "Failed to fetch cohorts from Database"
-  });
-});
+    if (!allCohorts || allCohorts.length === 0){
+      return next({ status: 404, message: "No cohorts found" });
+    }
+    console.log("All cohorts retrieved");
+    res.status(200).json(allCohorts);
+  })
+  .catch(error => next({status:500, message:"Failed to fetch Cohorts"}));
 });
 
 
@@ -71,22 +68,12 @@ app.get("/api/cohorts/:id", (req, res, next) => {
   Cohort.findById(id)
   .then(foundCohort => {
     if (!foundCohort) {
-      return next ({
-        status: 404,
-        message: `Cohort ${id} not found`
-      });
+    return next({ status: 404, message: `Cohort ${id} not found`});
     }
-    res.status(200).json({
-      message: `Cohort ${id} fetched successfully`,
-      cohort: foundCohort
-    });
-  }).catch ((error) => {
-    next ({
-      status: 500,
-      message: `Cohort ${id} does not exist`
-    });
+    res.status(200).json(foundCohort);
+  })
+   .catch(error => next({ status: 500, message: `Error retrieving cohort ${id}`}));
   });
-});
 
 //Create a new cohort
 app.post("/api/cohorts", (req, res, next) =>{
@@ -104,11 +91,17 @@ app.post("/api/cohorts", (req, res, next) =>{
     totalHours
   } = req.body;
 
-if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate || !endDate || !programManager || !leadTeacher) {
-  return next ({
-    status: 400,
-    message: "Missing required fields"
-  });
+if (
+  !cohortSlug ||
+  !cohortName ||
+  !program ||
+  !format ||
+  !campus ||
+  !startDate ||
+  !endDate ||
+  !programManager ||
+  !leadTeacher) {
+  return next({ status: 400, message: "Missing required fields" });
 }
 
   Cohort.create({
@@ -124,17 +117,8 @@ if (!cohortSlug || !cohortName || !program || !format || !campus || !startDate |
     leadTeacher,
     totalHours
   })
-  .then(newCohort => {
-    res.status(201).json({
-      message: "Cohort created successfully",
-      cohort: newCohort
-    });
-}).catch (error => {
-  next ({
-    status: 500,
-    message: "Failed to create new cohort"
-  });
-});
+  .then(newCohort => res.status(201).json(newCohort))
+  .catch(error => next({ status: 500, message: "Failed to create new cohort" }));
 });
 
 //Edit an existing cohort
@@ -143,33 +127,27 @@ app.put("/api/cohorts/:id", (req, res, next)=>{
   const updateData = req.body;
 
   if (!updateData || Object.keys(updateData).length === 0) {
-
-     return next ({
-        status: 400,
-        message: "Missing required fields"
-      });
-
+    return next({ status: 400, message: "Missing required fields" });
   }
 
-  Cohort.findByIdAndUpdate(id, updateData, {new:true})
+  Cohort.findByIdAndUpdate(id, updateData, {
+    new:true,
+    runValidators:true})
   .then(editedCohort => {
     if (!editedCohort){
-      return next ({
-        status: 404,
-        message: `Cohort ${id} not found`,
-      });
+    return next({ status: 404, message: `Cohort ${id} not found` });
     }
-    res.status(200).json({
-      message: `Cohort ${id} updated successfully`,
-      cohort: editedCohort
-    });
-  }).catch((error) => {
-    next ({
-      status: 500,
-      message: `Failed to update Cohort ${id}`
-    });
+    console.log(`Cohort ${id} successfully edited`);
+    res.status(200).json(editedCohort);
+  })
+  .catch(error => {
+    if(error.name ==="ValidationError"){
+      return next({status:400, message:error.message});
+    }
+    next({status:500, message:`Failed to update Cohort ${id}`});
   });
-});
+  });
+
 
 //Delete a specific cohort
 app.delete("/api/cohorts/:id", (req, res, next)=>{
@@ -177,100 +155,158 @@ app.delete("/api/cohorts/:id", (req, res, next)=>{
   Cohort.findByIdAndDelete(id)
   .then((deletedCohort)=>{
     if(!deletedCohort){
-      return next ({
-        status: 400,
-        message: `Cohort ${id} not found`
-      });
+      return next({ status: 400, message: `Cohort ${id} not found` });
     }
-    res.status(200).json({
-      message: `Cohort ${id} has been deleted`});
-  }).catch ((error) => {
-    next ({
-      status: 500,
-      message: `Failed to delete Cohort ${id}`
-    });
+    console.log(`Cohort ${id} successfully deleted`);
+    res.status(200).json({message: `Cohort ${id} has been deleted`});
+  })
+    .catch(error => next({ status: 500, message: `Failed to delete Cohort ${id}` }));
   });
-});
 
 
 
 
 //STUDENT ROUTES
 
-//Fetch all students
-// app.get("/api/students", (req, res) =>{
-//   Student.find().then(allStudents => {
-//     res.status(200).json(allStudents);
-//   }).catch(error => res.status(500).json(error));
-// });
-
-app.get("/api/students", (req, res) => {
+app.get("/api/students", (req, res, next) => {
   Student.find()
   .populate("cohort")
   .then((allStudents) => {
+    if(!allStudents || allStudents.length ===0){
+      return next({ status: 404, message: "No students found"});
+    }
+    console.log("All students retrieved");
     res.status(200).json(allStudents);
-  }).catch(error => res.status(500).json(error));
+  })
+  .catch(error => next({status:500, message: `Failed to fetch students`}));
 });
 
-//Fetch all students of a specific cohort
-// app.get("/api/students/cohort/:cohortId", (req, res) =>{
-//   const {cohortId} = req.params;
-//   Student.find({cohort: cohortId}).then(foundStudents => {
-//     res.status(200).json(foundStudents);
-//   }).catch(error => res.status(500).json(error));
-// });
 
-app.get("/api/students/cohort/:cohortId", (req, res) => {
+app.get("/api/students/cohort/:cohortId", (req, res, next) => {
   const {cohortId} = req.params;
   Student.find({cohort: cohortId})
   .populate("cohort")
   .then((foundStudents) => {
+    if (!foundStudents || foundStudents.length === 0){
+      return next({
+        status:400,
+        message: `No students found for cohort ${cohortId}`
+      });
+    }
+    console.log(`Students of Cohort ${cohortId} fetched successfully`);
     res.status(200).json(foundStudents);
-  }).catch(error => res.status(500).json(error));
+  })
+  .catch(error => next({status:500, message: `Failed to fetch Students of cohort ${cohortId}`}));
 })
 
-//Fetch student by ID
-// app.get("/api/students/:studentId", (req, res) => {
-//   const {studentId} = req.params;
-//   Student.findById(studentId).then(foundStudent =>{
-//     res.status(200).json(foundStudent);
-//   }).catch(error => res.status(500).json(error))
-// });
 
-app.get("/api/students/:studentId", (req,res) => {
+app.get("/api/students/:studentId", (req,res, next) => {
   const {studentId} = req.params;
   Student.findById(studentId)
   .populate("cohort")
   .then((foundStudent)=>{
+    if(!foundStudent){
+      return next({ status: 404, message: `Student ${studentId} not found` });
+    }
+    console.log(`Student ${foundStudent.firstName} ${foundStudent.lastName} retrieved successfully`);
     res.status(200).json(foundStudent);
-  }).catch(error => res.status(500).json(error));
+  })
+  .catch(error => next({ status: 500, message: `Failed to retrieve Student ${studentId}` }));
+
 });
 
 
 
 //Create a new student with cohort ID
-app.post("/api/students", (req, res) => {
-  const {firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort} = req.body;
-  Student.create({firstName, lastName, email, phone, linkedinUrl, languages, program, background, image, projects, cohort}).then(newStudent => {//what if I use cohort: cohortId here?
+app.post("/api/students", (req, res, next) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    linkedinUrl,
+    languages,
+    program,
+    background,
+    image,
+    projects,
+    cohort
+  } = req.body;
+
+   if (
+    !firstName ||
+    !lastName ||
+    !email ||
+    !phone) {
+    return next({ status: 400, message: "Missing required fields" });
+  }
+      
+    Student.create({
+    firstName,
+    lastName,
+    email,
+    phone,
+    linkedinUrl,
+    languages,
+    program,
+    background,
+    image,
+    projects,
+    cohort})
+    .then(newStudent => {
+      console.log(`Student ${newStudent.firstName} ${newStudent.lastName} created successfully`);
     res.status(201).json(newStudent);
-  }).catch(error => res.status(500).json(error));
+  })
+  .catch(error => {
+    if (error.code === 11000 && error.keyPattern?.email){
+      return next ({status:400, message:"Email already exists"});
+    }
+    next({status:500, message:"Failed to create student"});
+  });
 });
 
 //Edit an existing student
-app.put("/api/students/:studentId", (req, res) => {
+app.put("/api/students/:studentId", (req, res, next) => {
   const {studentId} = req.params;
-  Student.findByIdAndUpdate(studentId, req.body, {new:true}).then(editedStudent => {
+  const updateStudentData = req.body;
+
+  if (!updateStudentData || Object.keys(updateStudentData).length === 0){
+    return next({status:400, message:"Missing required fields"});
+  }
+
+
+  Student.findByIdAndUpdate(studentId, updateStudentData,
+    {
+      new:true,
+      runValidators:true})
+      .then(editedStudent => {
+        if(!editedStudent){
+          return next({status:404, message:`Student ${studentId} not found`});
+        }
+    console.log(`Student ${editedStudent.firstName} ${editedStudent.lastName} successfully edited`);
     res.status(200).json(editedStudent);
-  }).catch(error => res.status(500).json(error));
+  })
+  .catch(error =>{
+    if(error.name ==="ValidationError"){
+      return next({status:400, message:error.message});
+    }
+    next({status:500, message:`Failed to update student ${studentId}`});
+  });
 
   });
 
 //Delete a student by ID
-app.delete("/api/students/:studentId", (req, res)=>{
+app.delete("/api/students/:studentId", (req, res, next)=>{
   const {studentId} = req.params;
-  Student.findByIdAndDelete(studentId).then(()=>{
-    res.status(204).json({message: `Student ${studentId} has been deleted`});
-  }).catch(error => res.status(500).json(error));
+  Student.findByIdAndDelete(studentId)
+  .then((deletedStudent)=>{
+    if(!deletedStudent){
+      return next({status:404, message:`Student ${deletedStudent.firstName} not found`});
+    }
+    console.log(`Student ${deletedStudent.firstName} ${deletedStudent.lastName} successfully deleted`);
+    res.status(200).json({message: `Student ${studentId} has been deleted`});
+  })
+  .catch(error => next({status:500, message:`Failed to delete student ${studentId}`}));
 });
 
 const {errorHandler, notFoundHandler} = require('./middleware/error-handling');
