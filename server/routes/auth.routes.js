@@ -67,29 +67,45 @@ router.post('/login', (req, res, next) => {
     User.findOne({email})
     .then((foundUser) => {
         if(!foundUser){
+            console.log("User not found for email", email);
             res.status(401).json({message:"User not found"});
             return;
         }
 
+        console.log("Found user:", foundUser);
+        console.log("Stored hashed password:", foundUser.password);
+
         const passwordCorrect = bcrypt.compareSync(password, foundUser.password);
 
         if(passwordCorrect){
+            console.log("Password correct, creating token");
+
             const{ _id, email, name} = foundUser;
             const payload = { _id, email, name};
+
+            console.log("JWT payload:", payload);
+            console.log("JWT secret from env:", process.env.TOKEN_SECRET);
 
             const authToken = jwt.sign(
                 payload,
                 process.env.TOKEN_SECRET,
                 {algorithm: 'HS256', expiresIn:"6h"}
             );
+
+            console.log("Auth token created successfully.");
+
             res.status(200).json({authToken:authToken});
         }
         else {
+            console.log("Incorrect password for user:", email);
             res.status(401).json({message:"Unable to authenticate"});
         }
     })
-    .catch(err => res.status(500).json({message:"Internal explosion"}));
-})
+    .catch(err => {
+  console.error("Login error:", err);
+  res.status(500).json({ message: "Auth error", error: err.message });
+});
+});
 
 // GET /auth/verify
 router.get('/verify', isAuthenticated, (req, res, next) => {

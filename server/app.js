@@ -1,3 +1,6 @@
+require("dotenv").config();
+
+
 const express = require("express");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
@@ -9,6 +12,8 @@ const Cohort = require("./models/Cohort.model");
 const {isAuthenticated} = require("./middleware/jwt.middleware");
 
 const authRoutes = require("./routes/auth.routes");
+
+const userRoutes = require("./routes/user.routes");
 
 const PORT = 5005;
 
@@ -54,6 +59,9 @@ app.get("/docs", (req, res) => {
 
 app.use("/auth", authRoutes);
 
+//USER ROUTES
+
+app.use(userRoutes);
 
 //COHORT ROUTES
 
