@@ -10,11 +10,11 @@ const saltRounds = 10;
 
 // POST /auth/signup
 router.post('/signup', (req, res, next) =>{
-    console.log("route is working");
+    console.log("SIGNUP ROUTE IS WORKING");
     const {email, password, name} = req.body;
 
     if(email === "" || password === "" || name === ""){
-        res.status(400).json({message:"Provide email, password and name"});
+        res.status(400).json({message:"A required field is missing"});
         return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
